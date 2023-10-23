@@ -23,7 +23,7 @@ export const PaginationWrapper = styled.div`
   }
 `;
 
-const CALLS_PER_PAGE = 5;
+const CALLS_PER_PAGE = 5; //TODO: To fix the first request in job interview I must change this const number
 
 export const CallsListPage = () => {
   const [search] = useSearchParams();
@@ -39,7 +39,10 @@ export const CallsListPage = () => {
   });
 
   if (loading) return <p>Loading calls...</p>;
-  if (error) return <p>ERROR</p>;
+  if (error) {
+    console.log(error);
+    return <p>ERROR</p>;
+  }
   if (!data) return <p>Not found</p>;
 
   const { totalCount, nodes: calls } = data.paginatedCalls;
