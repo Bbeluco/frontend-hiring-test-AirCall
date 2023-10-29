@@ -23,7 +23,7 @@ export const PaginationWrapper = styled.div`
   }
 `;
 
-const CALLS_PER_PAGE = 5; //TODO: To fix the first request in job interview I must change this const number
+let CALLS_PER_PAGE = 5; //TODO: To fix the first request in job interview I must change this const number
 
 export const CallsListPage = () => {
   const [search] = useSearchParams();
@@ -53,6 +53,11 @@ export const CallsListPage = () => {
 
   const handlePageChange = (page: number) => {
     navigate(`/calls/?page=${page}`);
+  };
+
+  const handleUpdatePageTotalResults = (newPageSize: number) => {
+    CALLS_PER_PAGE = newPageSize;
+    navigate(`/calls/?limit=${newPageSize}`);
   };
 
   return (
@@ -120,6 +125,7 @@ export const CallsListPage = () => {
             pageSize={CALLS_PER_PAGE}
             onPageChange={handlePageChange}
             recordsTotalCount={totalCount}
+            onPageSizeChange={(newPageSize: number) => handleUpdatePageTotalResults(newPageSize)}
           />
         </PaginationWrapper>
       )}
