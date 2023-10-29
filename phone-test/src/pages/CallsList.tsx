@@ -9,10 +9,12 @@ import {
   Box,
   DiagonalDownOutlined,
   DiagonalUpOutlined,
-  Pagination
+  Pagination,
+  Select
 } from '@aircall/tractor';
 import { formatDate, formatDuration } from '../helpers/dates';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 
 export const PaginationWrapper = styled.div`
   > div {
@@ -23,17 +25,21 @@ export const PaginationWrapper = styled.div`
   }
 `;
 
-let CALLS_PER_PAGE = 5; //TODO: To fix the first request in job interview I must change this const number
+const DEFAULT_CALLS_PER_PAGE = 5;
 
 export const CallsListPage = () => {
+  const [callsFiltered, setCallsFiltered] = useState<Call[]>();
+  const [callsPerPage, setCallsPerPage] = useState<number>(DEFAULT_CALLS_PER_PAGE);
+  const [totalRecordsAvailable, setTotalRecordsAvailable] = useState<number>();
+
   const [search] = useSearchParams();
   const navigate = useNavigate();
   const pageQueryParams = search.get('page');
   const activePage = !!pageQueryParams ? parseInt(pageQueryParams) : 1;
   const { loading, error, data } = useQuery(PAGINATED_CALLS, {
     variables: {
-      offset: (activePage - 1) * CALLS_PER_PAGE,
-      limit: CALLS_PER_PAGE
+      offset: (activePage - 1) * callsPerPage,
+      limit: callsPerPage
     }
     // onCompleted: () => handleRefreshToken(),
   });
@@ -46,6 +52,7 @@ export const CallsListPage = () => {
   if (!data) return <p>Not found</p>;
 
   const { totalCount, nodes: calls } = data.paginatedCalls;
+  console.log(totalCount);
 
   const handleCallOnClick = (callId: string) => {
     navigate(`/calls/${callId}`);
@@ -56,8 +63,20 @@ export const CallsListPage = () => {
   };
 
   const handleUpdatePageTotalResults = (newPageSize: number) => {
-    CALLS_PER_PAGE = newPageSize;
-    navigate(`/calls/?limit=${newPageSize}`);
+    setCallsPerPage(newPageSize);
+  };
+
+  const handleFilterCurrentCallsList = (optionSelected: React.Key[]) => {
+    console.log(data);
+    if (optionSelected.length > 0) {
+      const total = calls.filter((call: Call) => call.call_type === optionSelected[0]);
+      setCallsFiltered(total);
+      setTotalRecordsAvailable(total.length);
+      return;
+    }
+
+    setCallsFiltered(undefined);
+    setTotalRecordsAvailable(undefined);
   };
 
   return (
@@ -65,8 +84,30 @@ export const CallsListPage = () => {
       <Typography variant="displayM" textAlign="center" py={3}>
         Calls History
       </Typography>
+
+      <Select
+        size="small"
+        options={[
+          {
+            value: 'missed',
+            label: 'Missed'
+          },
+          {
+            value: 'answered',
+            label: 'Answered'
+          },
+          {
+            value: 'voicemail',
+            label: 'Voicemail'
+          }
+        ]}
+        onSelectionChange={(optionSelected: React.Key[]) =>
+          handleFilterCurrentCallsList(optionSelected)
+        }
+      />
+
       <Spacer space={3} direction="vertical">
-        {calls.map((call: Call) => {
+        {(callsFiltered || calls).map((call: Call) => {
           const icon = call.direction === 'inbound' ? DiagonalDownOutlined : DiagonalUpOutlined;
           const title =
             call.call_type === 'missed'
@@ -122,9 +163,9 @@ export const CallsListPage = () => {
         <PaginationWrapper>
           <Pagination
             activePage={activePage}
-            pageSize={CALLS_PER_PAGE}
+            pageSize={callsPerPage}
             onPageChange={handlePageChange}
-            recordsTotalCount={totalCount}
+            recordsTotalCount={totalRecordsAvailable || totalCount}
             onPageSizeChange={(newPageSize: number) => handleUpdatePageTotalResults(newPageSize)}
           />
         </PaginationWrapper>
