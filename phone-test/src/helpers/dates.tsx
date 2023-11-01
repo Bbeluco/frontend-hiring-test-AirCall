@@ -32,3 +32,7 @@ const getValidDate = (date: Date | string) => {
 export const formatDate = (date: string) => {
   return format(getValidDate(date), 'LLL d - HH:mm');
 };
+
+export const formatInCalendarDate = (date: string) => {
+  return getValidDate(date).toISOString().split('T')[0];
+};

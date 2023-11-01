@@ -12,9 +12,9 @@ import {
   Pagination,
   Select
 } from '@aircall/tractor';
-import { formatDate, formatDuration } from '../helpers/dates';
+import { formatDate, formatDuration, formatInCalendarDate } from '../helpers/dates';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const PaginationWrapper = styled.div`
   > div {
@@ -52,7 +52,6 @@ export const CallsListPage = () => {
   if (!data) return <p>Not found</p>;
 
   const { totalCount, nodes: calls } = data.paginatedCalls;
-  console.log(totalCount);
 
   const handleCallOnClick = (callId: string) => {
     navigate(`/calls/${callId}`);
@@ -67,7 +66,6 @@ export const CallsListPage = () => {
   };
 
   const handleFilterCurrentCallsList = (optionSelected: React.Key[]) => {
-    console.log(data);
     if (optionSelected.length > 0) {
       const total = calls.filter((call: Call) => call.call_type === optionSelected[0]);
       setCallsFiltered(total);
@@ -78,6 +76,14 @@ export const CallsListPage = () => {
     setCallsFiltered(undefined);
     setTotalRecordsAvailable(undefined);
   };
+
+  const callsToShow = Object.entries(
+    (callsFiltered || calls).reduce((c: any, call: Call) => {
+      c[formatInCalendarDate(call.created_at)] = c[formatInCalendarDate(call.created_at)] || [];
+      c[formatInCalendarDate(call.created_at)].push(call);
+      return c;
+    }, {})
+  );
 
   return (
     <>
@@ -107,54 +113,63 @@ export const CallsListPage = () => {
       />
 
       <Spacer space={3} direction="vertical">
-        {(callsFiltered || calls).map((call: Call) => {
-          const icon = call.direction === 'inbound' ? DiagonalDownOutlined : DiagonalUpOutlined;
-          const title =
-            call.call_type === 'missed'
-              ? 'Missed call'
-              : call.call_type === 'answered'
-              ? 'Call answered'
-              : 'Voicemail';
-          const subtitle = call.direction === 'inbound' ? `from ${call.from}` : `to ${call.to}`;
-          const duration = formatDuration(call.duration / 1000);
-          const date = formatDate(call.created_at);
-          const notes = call.notes ? `Call has ${call.notes.length} notes` : <></>;
-
+        {callsToShow.map((todaysCalls: any) => {
           return (
-            <Box
-              key={call.id}
-              bg="black-a30"
-              borderRadius={16}
-              cursor="pointer"
-              onClick={() => handleCallOnClick(call.id)}
-            >
-              <Grid
-                gridTemplateColumns="32px 1fr max-content"
-                columnGap={2}
-                borderBottom="1px solid"
-                borderBottomColor="neutral-700"
-                alignItems="center"
-                px={4}
-                py={2}
-              >
-                <Box>
-                  <Icon component={icon} size={32} />
-                </Box>
-                <Box>
-                  <Typography variant="body">{title}</Typography>
-                  <Typography variant="body2">{subtitle}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" textAlign="right">
-                    {duration}
-                  </Typography>
-                  <Typography variant="caption">{date}</Typography>
-                </Box>
-              </Grid>
-              <Box px={4} py={2}>
-                <Typography variant="caption">{notes}</Typography>
-              </Box>
-            </Box>
+            <div>
+              <div>{todaysCalls[0]}</div>
+              {todaysCalls[1].map((call: Call) => {
+                const icon =
+                  call.direction === 'inbound' ? DiagonalDownOutlined : DiagonalUpOutlined;
+                const title =
+                  call.call_type === 'missed'
+                    ? 'Missed call'
+                    : call.call_type === 'answered'
+                    ? 'Call answered'
+                    : 'Voicemail';
+                const subtitle =
+                  call.direction === 'inbound' ? `from ${call.from}` : `to ${call.to}`;
+                const duration = formatDuration(call.duration / 1000);
+                const date = formatDate(call.created_at);
+                const notes = call.notes ? `Call has ${call.notes.length} notes` : <></>;
+
+                return (
+                  <Box
+                    key={call.id}
+                    bg="black-a30"
+                    borderRadius={16}
+                    cursor="pointer"
+                    onClick={() => handleCallOnClick(call.id)}
+                  >
+                    <Grid
+                      gridTemplateColumns="32px 1fr max-content"
+                      columnGap={2}
+                      borderBottom="1px solid"
+                      borderBottomColor="neutral-700"
+                      alignItems="center"
+                      px={4}
+                      py={2}
+                    >
+                      <Box>
+                        <Icon component={icon} size={32} />
+                      </Box>
+                      <Box>
+                        <Typography variant="body">{title}</Typography>
+                        <Typography variant="body2">{subtitle}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" textAlign="right">
+                          {duration}
+                        </Typography>
+                        <Typography variant="caption">{date}</Typography>
+                      </Box>
+                    </Grid>
+                    <Box px={4} py={2}>
+                      <Typography variant="caption">{notes}</Typography>
+                    </Box>
+                  </Box>
+                );
+              })}
+            </div>
           );
         })}
       </Spacer>
